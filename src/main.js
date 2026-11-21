@@ -57,6 +57,28 @@ async function main() {
       if ((i / BATCH) % 100 === 0) console.log('DIAG pushed_up_to=' + Math.min(i + BATCH, outRows.length));
     }
     console.log('DIAG push_loop_complete total=' + outRows.length);
+    if (rt.onPlatform) {
+      // Platform write-landing wait: pushData calls return before the
+      // dataset service has stored every item (observed 2026-11-21: a run
+      // that pushed 989,625 items retained only ~4,240 when the process
+      // exited seconds later). Poll the real dataset count and do not
+      // exit until every pushed item has landed; fail loudly otherwise.
+      const { Actor } = require('apify');
+      const ds = await Actor.openDataset();
+      const deadlinePolls = 360; // 360 x 5s = 30 min, inside the 3600s timeout
+      let landed = 0;
+      for (let p = 0; p < deadlinePolls; p++) {
+        const info = await ds.getInfo();
+        landed = info ? info.itemCount : 0;
+        console.log('DIAG dataset_items=' + landed + ' target=' + outRows.length);
+        if (landed >= outRows.length) break;
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+      if (landed < outRows.length) {
+        throw new Error('Dataset write-landing incomplete: ' + landed + ' of ' + outRows.length + ' items stored');
+      }
+      console.log('DIAG dataset_write_landing_complete items=' + landed);
+    }
   }
   let analytics = null;
   if (mode === 'analytics' || mode === 'both') {
