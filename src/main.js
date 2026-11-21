@@ -38,9 +38,13 @@ async function main() {
   const rt = await getRuntime();
   const input = (await rt.getInput()) || {};
   const mode = input.mode || 'both'; // rows | analytics | both
-  const snapshot = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, '..', 'data', 'resales.json.gz'))).toString('utf8'));
+  const gzPath = path.join(__dirname, '..', 'data', 'resales.json.gz');
+  console.log('DIAG gz_bytes=' + fs.statSync(gzPath).size);
+  const snapshot = JSON.parse(zlib.gunzipSync(fs.readFileSync(gzPath)).toString('utf8'));
   const all = snapshot.rows;
+  console.log('DIAG parsed_rows=' + all.length);
   const filtered = filterResales(all, input);
+  console.log('DIAG filtered_rows=' + filtered.length);
   const limit = Number.isInteger(input.limit) && input.limit > 0 ? input.limit : filtered.length;
   const outRows = filtered.slice(0, limit);
   if (mode === 'rows' || mode === 'both') {
@@ -50,11 +54,14 @@ async function main() {
     const BATCH = 1000;
     for (let i = 0; i < outRows.length; i += BATCH) {
       await rt.pushData(outRows.slice(i, i + BATCH));
+      if ((i / BATCH) % 100 === 0) console.log('DIAG pushed_up_to=' + Math.min(i + BATCH, outRows.length));
     }
+    console.log('DIAG push_loop_complete total=' + outRows.length);
   }
   let analytics = null;
   if (mode === 'analytics' || mode === 'both') {
     analytics = computeAnalytics(filtered);
+    console.log('DIAG analytics_rows_analysed=' + analytics.rows_analysed);
     analytics.meta = snapshot.meta;
     await rt.setValue('ANALYTICS', analytics);
   }
