@@ -48,36 +48,47 @@ async function main() {
   const limit = Number.isInteger(input.limit) && input.limit > 0 ? input.limit : filtered.length;
   const outRows = filtered.slice(0, limit);
   if (mode === 'rows' || mode === 'both') {
-    // Push in batches: a single pushData call with the full archive
-    // (~990k items) truncates/fails on platform (observed 2026-11-21:
-    // runs stopped at ~4,24x items). 1,000-item batches are proven safe.
     const BATCH = 1000;
-    for (let i = 0; i < outRows.length; i += BATCH) {
-      await rt.pushData(outRows.slice(i, i + BATCH));
-      if ((i / BATCH) % 100 === 0) console.log('DIAG pushed_up_to=' + Math.min(i + BATCH, outRows.length));
-    }
-    console.log('DIAG push_loop_complete total=' + outRows.length);
     if (rt.onPlatform) {
-      // Platform write-landing wait: pushData calls return before the
-      // dataset service has stored every item (observed 2026-11-21: a run
-      // that pushed 989,625 items retained only ~4,240 when the process
-      // exited seconds later). Poll the real dataset count and do not
-      // exit until every pushed item has landed; fail loudly otherwise.
-      const { Actor } = require('apify');
-      const ds = await Actor.openDataset();
-      const deadlinePolls = 360; // 360 x 5s = 30 min, inside the 3600s timeout
+      // Direct public-API pushes (bypass experiment, 2026-11-21): the SDK
+      // pushData path silently loses ~99.6% of items past ~4,24x on this
+      // platform (three instrumented runs). Push chunks straight to
+      // api.apify.com with per-chunk HTTP status, then verify the stored
+      // count and fail loudly on any mismatch.
+      const token = process.env.APIFY_TOKEN;
+      const datasetId = process.env.APIFY_DEFAULT_DATASET_ID;
+      if (!token || !datasetId) throw new Error('Missing APIFY_TOKEN or APIFY_DEFAULT_DATASET_ID in run env');
+      for (let i = 0; i < outRows.length; i += BATCH) {
+        const chunk = outRows.slice(i, i + BATCH);
+        const res = await fetch('https://api.apify.com/v2/datasets/' + datasetId + '/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify(chunk),
+        });
+        if (!res.ok) throw new Error('Direct push failed at item ' + i + ': HTTP ' + res.status + ' ' + (await res.text()).slice(0, 200));
+        if ((i / BATCH) % 100 === 0) console.log('DIAG pushed_up_to=' + Math.min(i + BATCH, outRows.length));
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      console.log('DIAG push_loop_complete total=' + outRows.length);
       let landed = 0;
-      for (let p = 0; p < deadlinePolls; p++) {
-        const info = await ds.getInfo();
-        landed = info ? info.itemCount : 0;
+      for (let p = 0; p < 24; p++) {
+        const infoRes = await fetch('https://api.apify.com/v2/datasets/' + datasetId, { headers: { Authorization: 'Bearer ' + token } });
+        const info = await infoRes.json();
+        landed = info && info.data ? info.data.itemCount : 0;
         console.log('DIAG dataset_items=' + landed + ' target=' + outRows.length);
         if (landed >= outRows.length) break;
         await new Promise((r) => setTimeout(r, 5000));
       }
       if (landed < outRows.length) {
-        throw new Error('Dataset write-landing incomplete: ' + landed + ' of ' + outRows.length + ' items stored');
+        throw new Error('Dataset write incomplete after direct pushes: ' + landed + ' of ' + outRows.length + ' items stored');
       }
       console.log('DIAG dataset_write_landing_complete items=' + landed);
+    } else {
+      for (let i = 0; i < outRows.length; i += BATCH) {
+        await rt.pushData(outRows.slice(i, i + BATCH));
+        if ((i / BATCH) % 100 === 0) console.log('DIAG pushed_up_to=' + Math.min(i + BATCH, outRows.length));
+      }
+      console.log('DIAG push_loop_complete total=' + outRows.length);
     }
   }
   let analytics = null;
