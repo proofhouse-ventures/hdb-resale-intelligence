@@ -43,7 +43,15 @@ async function main() {
   const filtered = filterResales(all, input);
   const limit = Number.isInteger(input.limit) && input.limit > 0 ? input.limit : filtered.length;
   const outRows = filtered.slice(0, limit);
-  if (mode === 'rows' || mode === 'both') await rt.pushData(outRows);
+  if (mode === 'rows' || mode === 'both') {
+    // Push in batches: a single pushData call with the full archive
+    // (~990k items) truncates/fails on platform (observed 2026-11-21:
+    // runs stopped at ~4,24x items). 1,000-item batches are proven safe.
+    const BATCH = 1000;
+    for (let i = 0; i < outRows.length; i += BATCH) {
+      await rt.pushData(outRows.slice(i, i + BATCH));
+    }
+  }
   let analytics = null;
   if (mode === 'analytics' || mode === 'both') {
     analytics = computeAnalytics(filtered);
