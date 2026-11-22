@@ -1,8 +1,6 @@
-# HDB Resale Intelligence — Singapore HDB Resale Flat Prices Archive 1990–Present
+# Singapore Housing Resale Transactions 1990–2026 — 989,625 Sales for Property Market Research
 
-Searchable, programmatic access to every HDB resale flat transaction published on data.gov.sg — the complete archive from January 1990 to the current month — plus genuinely derived analytics computed from that archive: median resale price and median price-per-sqm by town and flat type, and transaction volume by month and year.
-
-Built for property analysts, agents, valuers, researchers, and the agents and tools that work for them — inside Apify, where per-result pricing means you pay only for the rows you pull.
+Thirty-six years of Singapore public-housing resale transactions — 989,625 sales with town, flat type, floor area, storey, lease and resale price — for property-market research, valuation modelling and cross-market comparison. The dataset behind Singapore's most-studied housing market, cleaned and typed, with median-price analytics by town and period. Public data (HDB via data.gov.sg), snapshot-dated on every record; not a live feed.
 
 ## What you get
 
@@ -20,11 +18,11 @@ Built for property analysts, agents, valuers, researchers, and the agents and to
 
 ## Data source, licence and attribution
 
-Source dataset: **"Resale Flat Prices"** collection, Housing & Development Board, published on data.gov.sg (dataset resources `d_ebc5ab87086db484f88045b47411ebc5`, `d_43f493c6c50d54243cc1eab0df142d6a`, `d_2d5ff9ea31397b66239f245f57751537`, `d_ea9ed51da2787afaf8e51f827c304208`, `d_8b84c4ee58e3cfc0ece0d773c8ca6abc`), accessed 21 Nov 2026. Contains information from the Government of Singapore accessed via data.gov.sg, used under the **Singapore Open Data Licence v1.0** (https://data.gov.sg/open-data-licence).
+Source dataset: **"Resale Flat Prices"** collection, Housing & Development Board, published on data.gov.sg (dataset resources `d_ebc5ab7086db484f88045b47411ebc5`, `d_43f493c6c50d54243cc1eab6df142d6a`, `d_2d5ff9ea31397b66239f245f57751537`, `d_ea9ed51da2787faf8e51f827c304208`, `d_8b84c4ee58e3cfc0ece0d773c8ca6abc`), accessed 21 Nov 2026. Contains information from the Government of Singapore accessed via data.gov.sg, used under the **Singapore Open Data Licence v1.0** (https://data.gov.sg/open-data-licence).
 
 **Independent tool; not affiliated with HDB or GovTech, and not endorsed by them.**
 
-Personal-data handling: none is required — the source dataset contains no personal data. Its columns are transaction attributes only (month, town, flat type, block, street, storey range, floor area, flat model, lease years, price); there are no names, identification numbers or contact details in any field. Block and street are the transacted flat's address, as published by HDB.
+Personal-data handling: none is required — the source dataset contains no personal data. Its columns are transaction attributes only (month, town, flat type, block, street name, storey range, floor area, flat model, lease years, price); there are no names, identification numbers or contact details in any field. Block and street are the transacted flat's address, as published by HDB.
 
 ## Pricing
 
@@ -46,4 +44,4 @@ Personal-data handling: none is required — the source dataset contains no pers
 
 ## Terms
 
-Outputs are derived from the source dataset named above and are provided as-is for business intelligence. Prices, dates and coverage are exactly as published by the source, subject to the basis and field differences in the coverage statement above; check it before relying on any aggregate.
+Outputs are derived from the source dataset named above and are provided as-is for business intelligence. Prices, dates and coverage are exactly as published by the source, subject to the statements in the coverage section above; check it before relying on any aggregate.
